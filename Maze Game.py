@@ -301,46 +301,51 @@ class Main():
             for i in range(1, len(self.hint_path)):
                 current_cell = self.hint_path[i-1]
                 next_cell = self.hint_path[i]
-                pygame.draw.line(self.screen, pygame.Color("blue"),
+                pygame.draw.line(self.screen, pygame.Color("white"),
                                 (current_cell.x * self.tile + self.tile // 2, current_cell.y * self.tile + self.tile // 2),
                                 (next_cell.x * self.tile + self.tile // 2, next_cell.y * self.tile + self.tile // 2), 3)
 
 
                 
-    def find_path_bfs(self, maze, start_cell, end_cell):
+    def find_path_bfs(self, maze, start_x, start_y, end_x, end_y):
+    # Convert start and end coordinates to actual cell objects
+        start_cell = maze.grid_cells[start_x + start_y * maze.cols]
+        end_cell = maze.grid_cells[end_x + end_y * maze.cols]
+
         visited = set()
         queue = deque()
         path = {start_cell: None}
-    
+
         queue.append(start_cell)
         visited.add(start_cell)
-    
+
         while queue:
             current_cell = queue.popleft()
-        
+
             if current_cell == end_cell:
                 break
-        
+
             neighbors = current_cell.check_neighbors(maze.cols, maze.rows, maze.grid_cells)
             if neighbors is False:
                 continue  # Skip if there are no valid neighbors
-        
+
             for neighbor in neighbors:
                 if neighbor not in visited:
                     queue.append(neighbor)
                     visited.add(neighbor)
                     path[neighbor] = current_cell
-    
+
         if end_cell not in path:
             return None
-    
-    # Reconstruct the path from end to start
+
+        # Reconstruct the path from end to start
         path_list = []
         while end_cell is not None:
             path_list.append(end_cell)
             end_cell = path[end_cell]
-    
+
         return list(reversed(path_list))
+
 
 
 
@@ -353,6 +358,11 @@ class Main():
         clock = Clock()
         maze.generate_maze()
         clock.start_timer()
+
+        # Define start and end coordinates
+        start_x, start_y = 0, 0
+        end_x, end_y = cols - 1, rows - 1
+
         while self.running:
             self.screen.fill("black")
             self.screen.fill( pygame.Color("darkslategray"), (603, 0, 752, 752))
@@ -385,14 +395,17 @@ class Main():
                         player.down_pressed = False
                     player.check_move(tile, maze.grid_cells, maze.thickness)
 
+            if self.hint_button:
+                self.draw_hint_path()
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if self.button.collidepoint(event.pos):
                     self.hint_button = not self.hint_button
                     if self.hint_button:
                             # Calculate the hint path
-                            start_cell = maze.grid_cells[0]
-                            end_cell = maze.grid_cells[-1]
-                            self.hint_path = self.find_path_bfs(maze, start_cell, end_cell)
+                            
+                            self.hint_path = self.find_path_bfs(maze, start_x, start_y, end_x, end_y)
+                            print(start_x, start_y, end_x, end_y)
                             self.draw_hint_path()
                     else:
                         self.hint_path = []
@@ -417,6 +430,8 @@ class Main():
                 player.down_pressed = False
             self._draw(maze, tile, player, game, clock)
             self.FPS.tick(60)
+
+
 
 
 
