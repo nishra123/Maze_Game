@@ -20,12 +20,24 @@ class Cell:
         x, y = self.x * tile, self.y * tile
         if self.walls['top']:
             pygame.draw.line(sc, pygame.Color('white'), (x, y), (x + tile, y), self.thickness)
+            #pygame.draw.line(sc, pygame.Color("yellow"),
+                                #(self.x * tile + tile // 2, self.y * tile + tile // 2),
+                                #(self.x * tile + tile // 2, self.y * tile + tile // 2), 3)
         if self.walls['right']:
             pygame.draw.line(sc, pygame.Color('white'), (x + tile, y), (x + tile, y + tile), self.thickness)
+            #pygame.draw.line(sc, pygame.Color("yellow"),
+                                #(self.x * tile + tile // 2, self.y * tile + tile // 2),
+                                #(self.x * tile + tile // 2, self.y * tile + tile // 2), 3)
         if self.walls['bottom']:
             pygame.draw.line(sc, pygame.Color('white'), (x + tile, y + tile), (x , y + tile), self.thickness)
+            #pygame.draw.line(sc, pygame.Color("yellow"),
+                                #(self.x * tile + tile // 2, self.y * tile + tile // 2),
+                                #(self.x * tile + tile // 2, self.y * tile + tile // 2), 3)
         if self.walls['left']:
             pygame.draw.line(sc, pygame.Color('white'), (x, y + tile), (x, y), self.thickness)
+            #pygame.draw.line(sc, pygame.Color("yellow"),
+                                #(self.x * tile + tile // 2, self.y * tile + tile // 2),
+                                #(self.x * tile + tile // 2, self.y * tile + tile // 2), 3)#
 
 
     # checks if cell does exist and returns it if it does
@@ -42,6 +54,13 @@ class Cell:
         right = self.check_cell(self.x + 1, self.y, cols, rows, grid_cells)
         bottom = self.check_cell(self.x, self.y + 1, cols, rows, grid_cells)
         left = self.check_cell(self.x - 1, self.y, cols, rows, grid_cells)
+
+        print("Current Cell:", self.x, self.y)
+        #print("Top:", top.x if top else None, top.y if top else None, top.visited if top else None)
+        #print("Right:", right.x if right else None, right.y if right else None, right.visited if right else None)
+        #print("Bottom:", bottom.x if bottom else None, bottom.y if bottom else None, bottom.visited if bottom else None)
+        #print("Left:", left.x if left else None, left.y if left else None, left.visited if left else None)
+
         if top and not top.visited:
             neighbors.append(top)
         if right and not right.visited:
@@ -301,39 +320,44 @@ class Main():
             for i in range(1, len(self.hint_path)):
                 current_cell = self.hint_path[i-1]
                 next_cell = self.hint_path[i]
-                pygame.draw.line(self.screen, pygame.Color("white"),
+                pygame.draw.line(self.screen, pygame.Color("blue"),
                                 (current_cell.x * self.tile + self.tile // 2, current_cell.y * self.tile + self.tile // 2),
                                 (next_cell.x * self.tile + self.tile // 2, next_cell.y * self.tile + self.tile // 2), 3)
 
 
                 
-    def find_path_bfs(self, maze, start_x, start_y, end_x, end_y):
-    # Convert start and end coordinates to actual cell objects
-        start_cell = maze.grid_cells[start_x + start_y * maze.cols]
-        end_cell = maze.grid_cells[end_x + end_y * maze.cols]
+    def find_path_bfs(self, maze, start_cell, end_cell):
+        def cell_to_index(cell):
+            return cell.x + cell.y * maze.cols
 
         visited = set()
         queue = deque()
         path = {start_cell: None}
+        
 
         queue.append(start_cell)
         visited.add(start_cell)
+        
 
         while queue:
             current_cell = queue.popleft()
+            
 
             if current_cell == end_cell:
                 break
 
             neighbors = current_cell.check_neighbors(maze.cols, maze.rows, maze.grid_cells)
+            
             if neighbors is False:
                 continue  # Skip if there are no valid neighbors
 
             for neighbor in neighbors:
+                print(neighbor)
                 if neighbor not in visited:
                     queue.append(neighbor)
                     visited.add(neighbor)
                     path[neighbor] = current_cell
+                    
 
         if end_cell not in path:
             return None
@@ -341,11 +365,11 @@ class Main():
         # Reconstruct the path from end to start
         path_list = []
         while end_cell is not None:
-            path_list.append(end_cell)
+            path_list.append(cell_to_index(end_cell))
             end_cell = path[end_cell]
+            
 
         return list(reversed(path_list))
-
 
 
 
@@ -358,11 +382,6 @@ class Main():
         clock = Clock()
         maze.generate_maze()
         clock.start_timer()
-
-        # Define start and end coordinates
-        start_x, start_y = 0, 0
-        end_x, end_y = cols - 1, rows - 1
-
         while self.running:
             self.screen.fill("black")
             self.screen.fill( pygame.Color("darkslategray"), (603, 0, 752, 752))
@@ -395,17 +414,15 @@ class Main():
                         player.down_pressed = False
                     player.check_move(tile, maze.grid_cells, maze.thickness)
 
-            if self.hint_button:
-                self.draw_hint_path()
-
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if self.button.collidepoint(event.pos):
                     self.hint_button = not self.hint_button
                     if self.hint_button:
                             # Calculate the hint path
-                            
-                            self.hint_path = self.find_path_bfs(maze, start_x, start_y, end_x, end_y)
-                            print(start_x, start_y, end_x, end_y)
+                            start_cell = maze.grid_cells[0]
+                            mazelen = len(maze.grid_cells)
+                            end_cell = maze.grid_cells[mazelen-1]
+                            self.hint_path = self.find_path_bfs(maze, start_cell, end_cell)
                             self.draw_hint_path()
                     else:
                         self.hint_path = []
@@ -430,8 +447,6 @@ class Main():
                 player.down_pressed = False
             self._draw(maze, tile, player, game, clock)
             self.FPS.tick(60)
-
-
 
 
 
